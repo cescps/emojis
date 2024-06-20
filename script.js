@@ -5,9 +5,17 @@ let score = 0;
 
 const gameBoard = document.getElementById('gameBoard');
 const scoreDisplay = document.getElementById('score');
+const resetButton = document.getElementById('resetButton');
+
+resetButton.addEventListener('click', shuffleBoard);
+
+// Mostrar el tablero al principio
+createBoard();
 
 function createBoard() {
     board = [];
+    score = 0;
+    scoreDisplay.textContent = score;
     for (let i = 0; i < boardSize * boardSize; i++) {
         const emoji = emojis[Math.floor(Math.random() * emojis.length)];
         board.push(emoji);
@@ -37,44 +45,80 @@ function setPosition(tile, index) {
 }
 
 let firstTile = null;
-function handleTileClick(e) {
-    const clickedTile = e.target;
-    const clickedIndex = parseInt(clickedTile.dataset.index);
+let startX, startY;
 
-    if (firstTile === null) {
-        firstTile = clickedTile;
-        firstTile.classList.add('selected');
-    } else {
-        const firstIndex = parseInt(firstTile.dataset.index);
-        if (areAdjacent(firstIndex, clickedIndex)) {
-            swapTiles(firstIndex, clickedIndex);
-            if (checkMatches()) {
-                firstTile.classList.remove('selected');
-                firstTile = null;
-                updateBoard();
-            } else {
-                setTimeout(() => {
-                    swapTiles(firstIndex, clickedIndex); // swap back if no match
-                    firstTile.classList.remove('selected');
-                    firstTile = null;
-                }, 200);
-            }
-        } else {
-            firstTile.classList.remove('selected');
-            firstTile = clickedTile;
-            firstTile.classList.add('selected');
-        }
-    }
+function handleMouseDown(e) {
+    firstTile = e.target;
+    startX = e.clientX;
+    startY = e.clientY;
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
 }
 
-function areAdjacent(index1, index2) {
-    const row1 = Math.floor(index1 / boardSize);
-    const col1 = index1 % boardSize;
-    const row2 = Math.floor(index2 / boardSize);
-    const col2 = index2 % boardSize;
+function handleMouseMove(e) {
+    e.preventDefault();
+}
 
-    return (row1 === row2 && Math.abs(col1 - col2) === 1) ||
-           (col1 === col2 && Math.abs(row1 - row2) === 1);
+function handleMouseUp(e) {
+    const endX = e.clientX;
+    const endY = e.clientY;
+    handleSwipe(endX - startX, endY - startY);
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseup', handleMouseUp);
+}
+
+function handleTouchStart(e) {
+    firstTile = e.target;
+    const touch = e.touches[0];
+    startX = touch.clientX;
+    startY = touch.clientY;
+    firstTile.addEventListener('touchmove', handleTouchMove);
+    firstTile.addEventListener('touchend', handleTouchEnd);
+}
+
+function handleTouchMove(e) {
+    e.preventDefault();
+}
+
+function handleTouchEnd(e) {
+    const touch = e.changedTouches[0];
+    const endX = touch.clientX;
+    const endY = touch.clientY;
+    handleSwipe(endX - startX, endY - startY);
+    firstTile.removeEventListener('touchmove', handleTouchMove);
+    firstTile.removeEventListener('touchend', handleTouchEnd);
+}
+
+function handleSwipe(deltaX, deltaY) {
+    if (!firstTile) return;
+    const firstIndex = parseInt(firstTile.dataset.index);
+    let secondIndex = null;
+
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        if (deltaX > 30 && (firstIndex % boardSize) < boardSize - 1) {
+            secondIndex = firstIndex + 1; // Swipe right
+        } else if (deltaX < -30 && (firstIndex % boardSize) > 0) {
+            secondIndex = firstIndex - 1; // Swipe left
+        }
+    } else {
+        if (deltaY > 30 && firstIndex + boardSize < board.length) {
+            secondIndex = firstIndex + boardSize; // Swipe down
+        } else if (deltaY < -30 && firstIndex - boardSize >= 0) {
+            secondIndex = firstIndex - boardSize; // Swipe up
+        }
+    }
+
+    if (secondIndex !== null) {
+        swapTiles(firstIndex, secondIndex);
+        if (!checkMatches()) {
+            setTimeout(() => {
+                swapTiles(firstIndex, secondIndex); // Swap back if no match
+            }, 200);
+        } else {
+            updateBoard();
+        }
+    }
+    firstTile = null;
 }
 
 function swapTiles(index1, index2) {
@@ -132,6 +176,7 @@ function updateBoard() {
         if (board[i] === null) {
             for (let j = i; j >= boardSize; j -= boardSize) {
                 board[j] = board[j - boardSize];
+                board[j - boardSize] = null;
             }
             board[i % boardSize] = emojis[Math.floor(Math.random() * emojis.length)];
         }
@@ -142,42 +187,11 @@ function updateBoard() {
     }
 }
 
-// Handle mouse events for desktop
-function handleMouseDown(e) {
-    const tile = e.target;
-    tile.addEventListener('mouseup', handleMouseUp);
-    tile.addEventListener('mousemove', handleMouseMove);
+function shuffleBoard() {
+    board = [];
+    for (let i = 0; i < boardSize * boardSize; i++) {
+        const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+        board.push(emoji);
+    }
+    drawBoard();
 }
-
-function handleMouseUp(e) {
-    const tile = e.target;
-    tile.removeEventListener('mouseup', handleMouseUp);
-    tile.removeEventListener('mousemove', handleMouseMove);
-    handleTileClick(e);
-}
-
-function handleMouseMove(e) {
-    // Prevent default to avoid text selection
-    e.preventDefault();
-}
-
-// Handle touch events for mobile
-function handleTouchStart(e) {
-    const tile = e.target;
-    tile.addEventListener('touchend', handleTouchEnd);
-    tile.addEventListener('touchmove', handleTouchMove);
-}
-
-function handleTouchEnd(e) {
-    const tile = e.target;
-    tile.removeEventListener('touchend', handleTouchEnd);
-    tile.removeEventListener('touchmove', handleTouchMove);
-    handleTileClick(e);
-}
-
-function handleTouchMove(e) {
-    // Prevent default to avoid screen scrolling
-    e.preventDefault();
-}
-
-createBoard();
