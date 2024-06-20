@@ -19,6 +19,7 @@ body {
     grid-template-rows: repeat(5, 60px);
     gap: 5px;
     position: relative;
+    margin: 0 auto;
 }
 
 .tile {
@@ -40,15 +41,41 @@ body {
     outline: 2px solid #00f;
 }
 
-@keyframes fall {
-    from {
-        top: -60px;
-    }
-    to {
-        top: 0;
-    }
+#resetButton {
+    margin-top: 20px;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
 }
 
-.fall {
-    animation: fall 0.3s ease forwards;
+#resetButton:hover {
+    background-color: #0056b3;
+}
+
+@keyframes vibrate {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    50% { transform: translateX(5px); }
+    75% { transform: translateX(-5px); }
+    100% { transform: translateX(0); }
+}
+
+.vibrate {
+    animation: vibrate 0.5s ease-in-out;
+}
+
+.shake {
+    animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    50% { transform: translateX(5px); }
+    75% { transform: translateX(-5px); }
+    100% { transform: translateX(0); }
 }
